@@ -1,0 +1,118 @@
+{
+  "primary_model": "Random Forest (Primary)",
+  "total_training_samples": 4800,
+  "total_test_samples": 1200,
+  "feature_count": 10,
+  "features": [
+    "packets_per_second",
+    "bytes_per_second",
+    "tcp_count",
+    "udp_count",
+    "icmp_count",
+    "syn_count",
+    "average_packet_size",
+    "unique_source_ips",
+    "unique_destination_ips",
+    "connection_count"
+  ],
+  "performance_benchmark": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "true_negative": 600,
+      "false_positive": 0,
+      "false_negative": 0,
+      "true_positive": 600
+    }
+  },
+  "comparative_benchmarks": {
+    "Random Forest (Primary)": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "false_positive_rate": 0.0,
+      "confusion_matrix": {
+        "true_negative": 600,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 600
+      }
+    },
+    "Decision Tree (CART)": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "false_positive_rate": 0.0,
+      "confusion_matrix": {
+        "true_negative": 600,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 600
+      }
+    },
+    "Logistic Regression": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "false_positive_rate": 0.0,
+      "confusion_matrix": {
+        "true_negative": 600,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 600
+      }
+    }
+  },
+  "feature_importances": [
+    {
+      "feature": "unique_source_ips",
+      "importance": 0.3611
+    },
+    {
+      "feature": "unique_destination_ips",
+      "importance": 0.2442
+    },
+    {
+      "feature": "packets_per_second",
+      "importance": 0.1923
+    },
+    {
+      "feature": "icmp_count",
+      "importance": 0.0885
+    },
+    {
+      "feature": "connection_count",
+      "importance": 0.0817
+    },
+    {
+      "feature": "syn_count",
+      "importance": 0.0274
+    },
+    {
+      "feature": "tcp_count",
+      "importance": 0.004
+    },
+    {
+      "feature": "udp_count",
+      "importance": 0.0004
+    },
+    {
+      "feature": "bytes_per_second",
+      "importance": 0.0002
+    },
+    {
+      "feature": "average_packet_size",
+      "importance": 0.0002
+    }
+  ]
+}

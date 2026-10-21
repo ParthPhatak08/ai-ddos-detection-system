@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Network Security | DDoS Detection System{% endblock %}</title>
+  <meta name="description" content="AI-Based Real-Time DDoS Detection and Network Traffic Monitoring System">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <aside class="sidebar">
+    <div class="brand-section">
+      <div class="brand-icon">🛡️</div>
+      <div class="brand-text">
+        <h2>AegisNet AI</h2>
+        <span>DDoS Shield</span>
+      </div>
+    </div>
+
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="nav-text">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('dashboard') }}#monitor-section" class="nav-link" id="nav-live-monitor">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span class="nav-text">Live Monitor</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('dashboard') }}#ai-analysis-panel" class="nav-link" id="nav-ai-analysis">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span class="nav-text">AI Analysis</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('threat_history') }}" class="nav-link {% if active_page == 'history' %}active{% endif %}" id="nav-history">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="nav-text">Threat History</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('statistics') }}" class="nav-link {% if active_page == 'statistics' %}active{% endif %}" id="nav-statistics">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+          <span class="nav-text">Statistics</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('about_project') }}" class="nav-link {% if active_page == 'about' %}active{% endif %}" id="nav-about">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="nav-text">About Project</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="mode-badge" id="current-mode-badge">
+        <div class="mode-indicator" id="mode-indicator-dot"></div>
+        <span id="current-mode-label">STANDBY</span>
+      </div>
+      <p style="margin-top: 8px; font-size: 10px; color: var(--text-muted);">College Mini-Project v1.0</p>
+    </div>
+  </aside>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-wrapper">
+    <header class="top-header">
+      <div class="header-title">
+        <h1>AI NETWORK SECURITY</h1>
+        <p>Real-Time DDoS Detection & Traffic Monitoring</p>
+      </div>
+
+      <div class="header-status-pill" id="global-status-pill">
+        <div class="status-dot stopped" id="header-status-dot"></div>
+        <span id="header-status-text">MONITORING STOPPED</span>
+      </div>
+    </header>
+
+    <main class="content-container">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

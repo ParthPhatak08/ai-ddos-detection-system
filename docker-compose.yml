@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  aegisnet-ddos-detector:
+    build: .
+    container_name: aegisnet_ai
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - FLASK_DEBUG=False
+    volumes:
+      - ./database:/app/database

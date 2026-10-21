@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Network Statistics & Telemetry Audit | AI DDoS Detection{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <!-- Metric 1: Total Packets -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Total Packets Observed</span>
+      <span class="stat-icon">📦</span>
+    </div>
+    <div class="stat-value" id="stats-total-packets">{{ "{:,}".format(stats.total_packets) }}</div>
+    <div class="stat-sub">Lifetime capture volume from SQLite</div>
+  </div>
+
+  <!-- Metric 2: Total Bytes -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Total Data Monitored</span>
+      <span class="stat-icon">💾</span>
+    </div>
+    <div class="stat-value" id="stats-total-bytes">
+      {% if stats.total_bytes > 1073741824 %}
+        {{ "%.2f"|format(stats.total_bytes / 1073741824) }} GB
+      {% elif stats.total_bytes > 1048576 %}
+        {{ "%.2f"|format(stats.total_bytes / 1048576) }} MB
+      {% elif stats.total_bytes > 1024 %}
+        {{ "%.1f"|format(stats.total_bytes / 1024) }} KB
+      {% else %}
+        {{ stats.total_bytes }} Bytes
+      {% endif %}
+    </div>
+    <div class="stat-sub">Aggregated network telemetry load</div>
+  </div>
+
+  <!-- Metric 3: Normal Evaluations -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Normal Evaluations</span>
+      <span class="stat-icon">🟢</span>
+    </div>
+    <div class="stat-value stat-value-normal" id="stats-normal-count">
+      {{ "{:,}".format(stats.normal_count) }}
+    </div>
+    <div class="stat-sub">Benign intervals classified</div>
+  </div>
+
+  <!-- Metric 4: Suspicious Detections -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Suspicious Detections</span>
+      <span class="stat-icon">🔴</span>
+    </div>
+    <div class="stat-value stat-value-ddos" id="stats-ddos-count">
+      {{ "{:,}".format(stats.ddos_count) }}
+    </div>
+    <div class="stat-sub">Threat flags logged in database</div>
+  </div>
+</div>
+
+<div class="panel-grid panel-grid-spaced">
+  <!-- Protocol Breakdown Chart -->
+  <div class="dashboard-panel">
+    <div class="panel-title">
+      <span>PROTOCOL BREAKDOWN (TCP / UDP / ICMP / OTHER)</span>
+      <span class="panel-title-tag">TRANSPORT LAYER</span>
+    </div>
+    <div class="donut-chart-container">
+      <canvas id="protocolDonutChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Classification Ratio Chart -->
+  <div class="dashboard-panel">
+    <div class="panel-title">
+      <span>AI CLASSIFICATION RATIO</span>
+      <span class="panel-title-tag">RANDOM FOREST</span>
+    </div>
+    <div class="donut-chart-container">
+      <canvas id="classificationDonutChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded JSON Data Block (clean, valid JS, no templating syntax error) -->
+<script id="stats-data" type="application/json">{{ stats|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const dataElement = document.getElementById('stats-data');
+  const statsData = dataElement ? JSON.parse(dataElement.textContent || '{}') : {};
+  let protoChart = null;
+  let classChart = null;
+
+  // 1. Protocol Breakdown Doughnut Chart
+  const ctxProto = document.getElementById('protocolDonutChart');
+  if (ctxProto) {
+    protoChart = new Chart(ctxProto, {
+      type: 'doughnut',
+      data: {
+        labels: ['TCP', 'UDP', 'ICMP', 'Other'],
+        datasets: [{
+          data: statsData.protocol_breakdown || [65, 25, 5, 5],
+          backgroundColor: ['#00f2fe', '#8b5cf6', '#f59e0b', '#4b5563'],
+          borderWidth: 2,
+          borderColor: '#111827'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#9ca3af', font: { family: "'Inter', sans-serif", size: 12 } }
+          }
+        }
+      }
+    });
+  }
+
+  // 2. Classification Ratio Doughnut Chart
+  const ctxClass = document.getElementById('classificationDonutChart');
+  if (ctxClass) {
+    classChart = new Chart(ctxClass, {
+      type: 'doughnut',
+      data: {
+        labels: ['Normal Traffic', 'Suspicious / DDoS'],
+        datasets: [{
+          data: statsData.classification_ratio || [95, 5],
+          backgroundColor: ['#10b981', '#ef4444'],
+          borderWidth: 2,
+          borderColor: '#111827'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#9ca3af', font: { family: "'Inter', sans-serif", size: 12 } }
+          }
+        }
+      }
+    });
+  }
+
+  // Dynamic live statistics polling every 2.0s
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/statistics');
+      if (!res.ok) return;
+      const s = await res.json();
+
+      const pktsEl = document.getElementById('stats-total-packets');
+      const bytesEl = document.getElementById('stats-total-bytes');
+      const normEl = document.getElementById('stats-normal-count');
+      const ddosEl = document.getElementById('stats-ddos-count');
+
+      if (pktsEl) pktsEl.innerText = Number(s.total_packets || 0).toLocaleString();
+      if (normEl) normEl.innerText = Number(s.normal_count || 0).toLocaleString();
+      if (ddosEl) ddosEl.innerText = Number(s.ddos_count || 0).toLocaleString();
+
+      if (bytesEl && s.total_bytes !== undefined) {
+        const b = s.total_bytes;
+        if (b > 1073741824) bytesEl.innerText = (b / 1073741824).toFixed(2) + ' GB';
+        else if (b > 1048576) bytesEl.innerText = (b / 1048576).toFixed(2) + ' MB';
+        else if (b > 1024) bytesEl.innerText = (b / 1024).toFixed(1) + ' KB';
+        else bytesEl.innerText = b + ' Bytes';
+      }
+
+      if (protoChart && s.protocol_breakdown) {
+        protoChart.data.datasets[0].data = s.protocol_breakdown;
+        protoChart.update();
+      }
+
+      if (classChart && s.classification_ratio) {
+        classChart.data.datasets[0].data = s.classification_ratio;
+        classChart.update();
+      }
+    } catch (err) {
+      console.error('Error polling dynamic statistics:', err);
+    }
+  }, 2000);
+});
+</script>
+{% endblock %}

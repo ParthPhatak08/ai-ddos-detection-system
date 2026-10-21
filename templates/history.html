@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Threat History | AI DDoS Detection{% endblock %}
+
+{% block content %}
+<div class="dashboard-panel">
+  <div class="panel-title">
+    <div>
+      <span class="history-title-main">Threat Detection Event Log</span>
+      <p class="history-title-sub">
+        Chronological audit of suspicious network patterns and AI classifications stored in local SQLite database.
+      </p>
+    </div>
+    <div class="btn-group-custom">
+      <button class="btn btn-outline btn-history-export" onclick="clearThreatHistory()">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        Clear History
+      </button>
+      <a href="{{ url_for('export_csv') }}" class="btn btn-outline btn-history-export">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Export CSV
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive table-wrapper-spaced">
+    <table class="custom-table" id="threat-history-table">
+      <thead>
+        <tr>
+          <th>Event ID</th>
+          <th>Timestamp</th>
+          <th>Mode</th>
+          <th>Detection</th>
+          <th>AI Confidence</th>
+          <th>Risk Level</th>
+          <th>Packets/s</th>
+          <th>SYN Count</th>
+          <th>Flows</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="history-tbody">
+        {% if events %}
+          {% for event in events %}
+          <tr>
+            <td class="text-mono">#{{ event.id }}</td>
+            <td>{{ event.timestamp }}</td>
+            <td><span class="mode-badge">{{ event.mode }}</span></td>
+            <td>
+              {% if 'DDoS' in event.prediction or event.prediction == 1 %}
+                <span class="text-accent-red">POSSIBLE DDoS</span>
+              {% else %}
+                <span class="text-accent-green">NORMAL</span>
+              {% endif %}
+            </td>
+            <td class="text-mono">{{ "%.1f"|format(event.confidence * 100) }}%</td>
+            <td>
+              <span class="ai-risk-badge risk-{{ event.risk_level|lower }}">{{ event.risk_level }}</span>
+            </td>
+            <td class="text-mono">{{ event.packets_per_second }}</td>
+            <td class="text-mono">{{ event.syn_count }}</td>
+            <td class="text-mono">{{ event.connection_count }}</td>
+            <td>
+              <button class="btn btn-outline btn-details-action btn-view-detail" data-id="{{ event.id }}">Details</button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="10" class="table-empty-cell">
+              No threats recorded yet. Perform a simulation or start live monitoring to populate this log.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal for Event Details -->
+<div id="eventModal" class="history-modal-overlay">
+  <div class="history-modal-card">
+    <div class="history-modal-header">
+      <h3 class="history-modal-title" id="modal-title">Event Detail</h3>
+      <button onclick="closeModal()" class="history-modal-close">&times;</button>
+    </div>
+    <div id="modal-content" class="history-modal-body">
+      <!-- Injected by JavaScript -->
+    </div>
+    <div class="history-modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded JSON Data Block for History Events -->
+<script id="history-events-json" type="application/json">{{ events|tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const table = document.getElementById('threat-history-table');
+  if (table) {
+    table.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-view-detail');
+      if (btn) {
+        const eventId = btn.getAttribute('data-id');
+        if (eventId) {
+          viewEventDetails(eventId);
+        }
+      }
+    });
+  }
+});
+
+async function viewEventDetails(eventId) {
+  const dataEl = document.getElementById('history-events-json');
+  const events = dataEl ? JSON.parse(dataEl.textContent || '[]') : [];
+  let event = events.find(e => e.id === Number(eventId));
+
+  // Fallback to API if not in local initial cache
+  if (!event) {
+    try {
+      const res = await fetch(`/api/threat/${eventId}`);
+      if (res.ok) {
+        event = await res.json();
+      }
+    } catch (err) {
+      console.error('Failed to fetch threat details:', err);
+    }
+  }
+
+  if (!event) return;
+
+  document.getElementById('modal-title').innerText = `Event #${event.id} Details`;
+  const isDDoS = (event.prediction && event.prediction.includes('DDoS')) || event.prediction === 1;
+  const predClass = isDDoS ? 'text-accent-red' : 'text-accent-green';
+  const riskClass = (event.risk_level || 'low').toLowerCase();
+
+  let obsHtml = '';
+  if (event.observations && event.observations.length) {
+    const listItems = event.observations.map(o => `<li>${o}</li>`).join('');
+    obsHtml = `
+      <div class="ai-obs-title ai-obs-container">Diagnostic Observations:</div>
+      <ul class="observations-list">${listItems}</ul>
+    `;
+  }
+
+  document.getElementById('modal-content').innerHTML = `
+    <div><strong>Timestamp:</strong> ${event.timestamp}</div>
+    <div><strong>Operating Mode:</strong> <span class="mode-badge">${event.mode}</span></div>
+    <div><strong>Prediction:</strong> <span class="${predClass}">${event.prediction}</span></div>
+    <div><strong>AI Confidence:</strong> ${(event.confidence * 100).toFixed(1)}%</div>
+    <div><strong>Risk Level:</strong> <span class="ai-risk-badge risk-${riskClass}">${event.risk_level}</span></div>
+    <hr class="history-modal-divider">
+    <div><strong>Packets/Sec:</strong> ${event.packets_per_second ? Number(event.packets_per_second).toLocaleString() : 0}</div>
+    <div><strong>SYN Packets:</strong> ${event.syn_count ? Number(event.syn_count).toLocaleString() : 0}</div>
+    <div><strong>Active Flows:</strong> ${event.connection_count ? Number(event.connection_count).toLocaleString() : 0}</div>
+    <div><strong>Unique Source IPs:</strong> ${event.unique_source_ips || 'N/A'}</div>
+    ${obsHtml}
+  `;
+  document.getElementById('eventModal').style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('eventModal').style.display = 'none';
+}
+
+async function clearThreatHistory() {
+  if (!confirm('Are you sure you want to clear all recorded threat history?')) return;
+  try {
+    const res = await fetch('/api/history/clear', { method: 'POST' });
+    if (res.ok) {
+      window.location.reload();
+    }
+  } catch (e) {
+    alert('Failed to clear history: ' + e.message);
+  }
+}
+</script>
+{% endblock %}

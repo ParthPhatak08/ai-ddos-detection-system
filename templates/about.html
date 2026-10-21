@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}About Project & ML Benchmarks | AI DDoS Detection{% endblock %}
+
+{% block content %}
+<div class="dashboard-panel">
+  <div class="panel-title">
+    <span>ACADEMIC MINI-PROJECT OVERVIEW</span>
+    <span class="panel-title-tag">COMPUTER NETWORKS &amp; CYBERSECURITY</span>
+  </div>
+  
+  <div class="about-overview-text">
+    <p>
+      <strong>Project Title:</strong> AI-Based Real-Time DDoS Detection and Network Traffic Monitoring System (AegisNet AI)<br>
+      <strong>Discipline Integration:</strong> Computer Networks (sliding-window telemetry, transport protocols, connection states) + Cybersecurity (volumetric signatures, SYN floods, alert deduplication) + Artificial Intelligence (Supervised Random Forest classification, explainable diagnostic heuristics).
+    </p>
+  </div>
+</div>
+
+<!-- Machine Learning Model Benchmark Card -->
+{% if report and report.performance_benchmark %}
+<div class="dashboard-panel about-benchmark-card">
+  <div class="panel-title">
+    <span>PRODUCTION MODEL BENCHMARKS (RANDOM FOREST CLASSIFIER)</span>
+    <span class="panel-title-tag">EVALUATION METRICS</span>
+  </div>
+
+  <div class="stats-grid stats-grid-benchmark">
+    <div class="stat-card">
+      <div class="stat-header"><span class="stat-label">Model Accuracy</span></div>
+      <div class="stat-value stat-value-green">{{ "%.2f"|format(report.performance_benchmark.accuracy * 100) }}%</div>
+      <div class="stat-sub">Test set evaluation</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span class="stat-label">Precision</span></div>
+      <div class="stat-value stat-value-cyan">{{ "%.2f"|format(report.performance_benchmark.precision * 100) }}%</div>
+      <div class="stat-sub">Benign vs attack purity</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span class="stat-label">Recall (TPR)</span></div>
+      <div class="stat-value stat-value-purple">{{ "%.2f"|format(report.performance_benchmark.recall * 100) }}%</div>
+      <div class="stat-sub">Threat detection coverage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span class="stat-label">F1-Score</span></div>
+      <div class="stat-value stat-value-white">{{ "%.2f"|format(report.performance_benchmark.f1_score * 100) }}%</div>
+      <div class="stat-sub">Harmonic mean</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-header"><span class="stat-label">False Positive Rate</span></div>
+      <div class="stat-value stat-value-green">{{ "%.2f"|format(report.performance_benchmark.false_positive_rate * 100) }}%</div>
+      <div class="stat-sub">Benign misclassification</div>
+    </div>
+  </div>
+
+  <!-- Feature Importance Ranking -->
+  {% if report.feature_importances %}
+  <div class="ai-obs-container">
+    <h4 class="feature-heading">Top Discriminative Features</h4>
+    <div class="feature-tags-container">
+      {% for feat in report.feature_importances %}
+      <div class="feature-tag-chip">
+        <strong class="stat-value-white">{{ feat.feature }}</strong>: 
+        <span class="feature-tag-value">{{ "%.1f"|format(feat.importance * 100) }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="panel-grid panel-grid-spaced">
+  <div class="dashboard-panel">
+    <h3 class="section-title-cyan">1. Computer Networks Fundamentals</h3>
+    <ul class="observations-list">
+      <li><span class="observation-dot"></span> <strong>Packet Telemetry:</strong> Aggregation over sliding time windows (Packets/sec, Bytes/sec).</li>
+      <li><span class="observation-dot"></span> <strong>Transport Layer Breakdown:</strong> TCP vs UDP vs ICMP protocol inspection.</li>
+      <li><span class="observation-dot"></span> <strong>TCP 3-Way Handshake:</strong> Tracking SYN packets vs ACK completions to flag incomplete handshake floods (SYN Flood).</li>
+      <li><span class="observation-dot"></span> <strong>Flow &amp; IP Diversity:</strong> Unique source and destination IP cardinality to distinguish legitimate server surges from distributed botnet activity.</li>
+    </ul>
+
+    <h3 class="section-title-red">2. Cybersecurity &amp; DDoS Characteristics</h3>
+    <ul class="observations-list">
+      <li><span class="observation-dot"></span> <strong>Volumetric Attacks:</strong> Saturation of interface bandwidth via extreme packet rates.</li>
+      <li><span class="observation-dot"></span> <strong>Protocol Attacks:</strong> Resource exhaustion (e.g., SYN table exhaustion in OS kernels).</li>
+      <li><span class="observation-dot"></span> <strong>Alert Cooldown:</strong> Deduplicating consecutive alerts to prevent alarm fatigue in Security Operations Centers (SOC).</li>
+      <li><span class="observation-dot"></span> <strong>Safety Guarantee:</strong> Safe Simulation mode uses offline sample feature vectors without crafting or broadcasting attacking packets.</li>
+    </ul>
+  </div>
+
+  <div class="dashboard-panel">
+    <h3 class="section-title-green">3. Machine Learning Architecture</h3>
+    <ul class="observations-list">
+      <li><span class="observation-dot"></span> <strong>Model:</strong> Random Forest Classifier (ensemble of 100 decision trees).</li>
+      <li><span class="observation-dot"></span> <strong>Supervised Objective:</strong> Binary classification: 0 (Normal) vs 1 (DDoS).</li>
+      <li><span class="observation-dot"></span> <strong>Features Extracted:</strong> Fixed 10-dimensional numerical feature vector guaranteeing training/inference parity.</li>
+      <li><span class="observation-dot"></span> <strong>Explainability Principle:</strong> AI confidence is derived from ensemble voting; diagnostic observations provide transparent heuristics.</li>
+    </ul>
+
+    <div class="viva-box">
+      <h4 class="viva-box-heading">Viva Note for External Examiner:</h4>
+      <p class="viva-box-text">
+        "On single host deployments, promiscuous mode only captures packets arriving at or leaving the user's network adapter. Our design provides both Live Local Capture (psutil + Scapy socket inspection) and Safe Simulation Mode (synthesized statistical feature sets) to showcase real-time ML classification without impacting campus networks."
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

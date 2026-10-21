@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | AI-Based Real-Time DDoS Detection System{% endblock %}
+
+{% block content %}
+<!-- Notice Banner -->
+<div class="notice-banner" id="interface-notice">
+  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <div>
+    <strong>Academic Scope Notice:</strong> Live Mode captures and analyzes network packets visible to this computer's local network interface. It does <em>not</em> automatically monitor every device across a switched or Wi-Fi network. For demonstration, use <strong>Safe Simulation Mode</strong>.
+  </div>
+</div>
+
+<!-- Network Interface Information & Controls -->
+<div class="controls-card" id="monitor-section">
+  <div class="controls-row">
+    <div>
+      <div class="control-label">Selected Interface</div>
+      <div class="control-input-group">
+        <select id="interface-select" class="form-select" title="Select Network Interface" aria-label="Select Network Interface">
+          <option value="auto">Auto-detecting interfaces...</option>
+        </select>
+        <span class="interface-ip-text" id="interface-ip">IP: Detecting...</span>
+      </div>
+    </div>
+
+    <!-- Monitoring Action Buttons -->
+    <div class="btn-group-custom">
+      <button class="btn btn-primary" id="btn-start-monitor" onclick="startMonitoring()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        Start Monitoring
+      </button>
+      <button class="btn btn-danger btn-hidden" id="btn-stop-monitor" onclick="stopMonitoring()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+        Stop Monitoring
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Safe Simulation Mode Card -->
+<div class="controls-card sim-card-amber" id="sim-section">
+  <div class="controls-row">
+    <div>
+      <h3 class="sim-heading">
+        <span>SAFE SIMULATION MODE</span>
+        <span class="sim-tag-amber">Zero Attack Traffic</span>
+      </h3>
+      <p class="sim-subtext">
+        Safely injects pre-recorded normal or DDoS-like feature vectors to test the AI model without sending malicious packets.
+      </p>
+    </div>
+
+    <div class="btn-group-custom">
+      <button class="btn btn-sim-normal" id="btn-sim-normal" onclick="simulateTraffic('normal')">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        Simulate Normal Traffic
+      </button>
+      <select id="attack-select" class="form-select-sm" title="Select Attack Vector to Simulate" aria-label="Select Attack Vector to Simulate">
+        <option value="SYN_FLOOD">TCP SYN Flood</option>
+        <option value="UDP_FLOOD">UDP Volumetric</option>
+        <option value="HTTP_FLOOD">HTTP Connection</option>
+      </select>
+      <button class="btn btn-sim-ddos" id="btn-sim-ddos" onclick="simulateTraffic('ddos')">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        Simulate Attack
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 8 Core Metric Statistics Cards -->
+<div class="stats-grid">
+  <!-- Card 1: Packets/sec -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Packets / Sec</span>
+      <span class="stat-icon">⚡</span>
+    </div>
+    <div class="stat-value" id="val-pps">0</div>
+    <div class="stat-sub">Network throughput rate</div>
+  </div>
+
+  <!-- Card 2: Bytes/sec -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Bytes / Sec</span>
+      <span class="stat-icon">📊</span>
+    </div>
+    <div class="stat-value" id="val-bps">0 B/s</div>
+    <div class="stat-sub">Bandwidth consumption</div>
+  </div>
+
+  <!-- Card 3: Connections / Flows -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Active Flows</span>
+      <span class="stat-icon">🔄</span>
+    </div>
+    <div class="stat-value" id="val-connections">0</div>
+    <div class="stat-sub">Distinct network sockets</div>
+  </div>
+
+  <!-- Card 4: Observed IPs -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Observed IPs</span>
+      <span class="stat-icon">🌐</span>
+    </div>
+    <div class="stat-value" id="val-ips">0</div>
+    <div class="stat-sub">Unique IP addresses seen</div>
+  </div>
+
+  <!-- Card 5: TCP Count -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">TCP Packets</span>
+      <span class="stat-icon">📦</span>
+    </div>
+    <div class="stat-value" id="val-tcp">0</div>
+    <div class="stat-sub">Transmission Control Protocol</div>
+  </div>
+
+  <!-- Card 6: UDP Count -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">UDP Packets</span>
+      <span class="stat-icon">📨</span>
+    </div>
+    <div class="stat-value" id="val-udp">0</div>
+    <div class="stat-sub">User Datagram Protocol</div>
+  </div>
+
+  <!-- Card 7: SYN Count -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">SYN Packets</span>
+      <span class="stat-icon">🚩</span>
+    </div>
+    <div class="stat-value" id="val-syn">0</div>
+    <div class="stat-sub">Handshake initiation packets</div>
+  </div>
+
+  <!-- Card 8: Threats Detected -->
+  <div class="stat-card stat-card-threat">
+    <div class="stat-header">
+      <span class="stat-label stat-label-threat">Threats Detected</span>
+      <span class="stat-icon">🚨</span>
+    </div>
+    <div class="stat-value stat-value-threat" id="val-threats">0</div>
+    <div class="stat-sub">Flagged suspicious intervals</div>
+  </div>
+</div>
+
+<!-- Main Panels: Real-time Traffic Graph & AI Threat Analysis -->
+<div class="panel-grid">
+  <!-- Left Panel: Real-Time Traffic Chart -->
+  <div class="dashboard-panel">
+    <div class="panel-title">
+      <span>REAL-TIME NETWORK TRAFFIC TELEMETRY</span>
+      <span class="panel-title-tag" id="chart-update-indicator">LIVE POLLING</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="trafficChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Right Panel: AI Threat Analysis -->
+  <div class="dashboard-panel" id="ai-analysis-panel">
+    <div class="panel-title">
+      <span>AI THREAT ANALYSIS</span>
+      <span class="panel-title-tag">RANDOM FOREST</span>
+    </div>
+
+    <div class="ai-status-box">
+      <div class="ai-status-row">
+        <span class="ai-status-label">Prediction:</span>
+        <strong id="ai-prediction-text" class="ai-prediction-value">NORMAL</strong>
+      </div>
+      <div class="ai-status-row">
+        <span class="ai-status-label">Risk Level:</span>
+        <span class="ai-risk-badge risk-low" id="ai-risk-badge">LOW</span>
+      </div>
+      <div class="ai-status-row">
+        <span class="ai-status-label">AI Confidence:</span>
+        <strong id="ai-confidence-text" class="ai-confidence-value">0.0%</strong>
+      </div>
+    </div>
+
+    <!-- Probability Breakdown -->
+    <div class="progress-bar-container">
+      <div class="progress-header">
+        <span>Normal Probability</span>
+        <span id="prob-normal-text">100%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill normal" id="prob-normal-bar"></div>
+      </div>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-header">
+        <span>DDoS Likelihood</span>
+        <span id="prob-ddos-text">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill ddos" id="prob-ddos-bar"></div>
+      </div>
+    </div>
+
+    <!-- Contributing Observations -->
+    <div class="ai-obs-container">
+      <div class="ai-obs-title">
+        Diagnostic Observations
+      </div>
+      <ul class="observations-list" id="ai-observations-list">
+        <li><span class="observation-dot"></span> Traffic metrics within baseline operating parameters</li>
+        <li><span class="observation-dot"></span> TCP handshake to transmission ratios balanced</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Security Events Table -->
+<div class="dashboard-panel">
+  <div class="panel-title">
+    <span>RECENT SECURITY EVENTS</span>
+    <a href="{{ url_for('threat_history') }}" class="panel-link">View Full History &rarr;</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="custom-table" id="recent-events-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Mode</th>
+          <th>Detection</th>
+          <th>Risk Level</th>
+          <th>AI Confidence</th>
+          <th>Packets/Sec</th>
+          <th>SYN Count</th>
+          <th>Flows</th>
+        </tr>
+      </thead>
+      <tbody id="recent-events-tbody">
+        <tr>
+          <td colspan="8" class="table-empty-cell">No security alerts recorded yet. Click "Simulate Attack" or "Start Monitoring".</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
